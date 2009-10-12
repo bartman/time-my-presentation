@@ -70,7 +70,7 @@ if (defined $contfile) {
         }
 }
 
-my $outfile = $contfile || "timing-$title.txt";
+my $outfile = $contfile || "timing-$title.csv";
 open (TIME, "> $outfile")
         or die "could not open $outfile for writing\n";
 
