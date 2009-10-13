@@ -2,8 +2,13 @@
 use strict;
 
 my $contfile;
-if ($ARGV[0] && -f $ARGV[0]) {
-        $contfile = $ARGV[0];
+
+# ------------------------------------------------------------------------
+# user gave us an argument as a file to write to
+
+my $filearg = $ARGV[0];
+if ($filearg && -f $filearg) {
+        $contfile = $filearg;
 
         my $line = `tail -n1 $contfile`;
         chomp $line;
@@ -14,6 +19,9 @@ if ($ARGV[0] && -f $ARGV[0]) {
         print STDERR "Press ENTER to continue.\n";
         <STDIN>;
 }
+
+# ------------------------------------------------------------------------
+# figure out what window to track
 
 print STDERR "Which window do I track?\n";
 
@@ -35,11 +43,23 @@ while (<XWININFO>) {
 close (XWININFO);
 die "couldn't get the ID\n" if not defined $id;
 
+# ------------------------------------------------------------------------
+# use xev to track events
+
+open(XEV, "xev -id $id |")
+        or die "could not start xev\n";
+
+# ------------------------------------------------------------------------
+# the timing info
+
 my $start = time;
 my $page = 1;
 my @pend = ();
 
-if (defined $contfile) {
+# ------------------------------------------------------------------------
+# if we are continuing, then populate the database now
+
+if (defined $contfile && -f $contfile) {
         open(IN, $contfile)
                 or die "Cannot open file to continue: $contfile\n";
 
@@ -70,9 +90,15 @@ if (defined $contfile) {
         }
 }
 
-my $outfile = $contfile || "timing-$title.csv";
+# ------------------------------------------------------------------------
+# prepare output file
+
+my $outfile = $filearg || "timing-$title.csv";
 open (TIME, "> $outfile")
         or die "could not open $outfile for writing\n";
+
+# ------------------------------------------------------------------------
+# signal handler
 
 sub sig_int {
         print STDERR "----\n";
@@ -91,8 +117,9 @@ sub sig_int {
 }
 $SIG{INT} = \&sig_int;
 
-open(XEV, "xev -id $id |")
-        or die "could not start xev\n";
+# ------------------------------------------------------------------------
+# now process events
+
 while(<XEV>) {
         chomp;
         # state 0x0, keycode 45 (keysym 0x6b, k), same_screen YES,
